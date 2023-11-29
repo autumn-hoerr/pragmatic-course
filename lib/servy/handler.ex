@@ -4,6 +4,7 @@ defmodule Servy.Handler do
   @pages_path Path.expand("pages", File.cwd!)
 
   alias Servy.Conv
+  alias Servy.BearController
 
   import Servy.Plugins, only: [rewrite_path: 1, log: 1, track: 1]
   import Servy.Parser, only: [parse: 1]
@@ -26,11 +27,15 @@ defmodule Servy.Handler do
   end
 
   def route(%Conv{ method: "GET", path: "/bears" } = conv) do
-    %{ conv | status: 200, resp_body: "Teddy, Smokey, Paddington" }
+    BearController.index(conv)
   end
 
   def route(%Conv{ method: "GET", path: "/bears/" <> id } = conv) do
-    %{ conv | status: 200, resp_body: "Bear #{id}"}
+    BearController.show(conv, id)
+  end
+
+  def route(%Conv{ method: "POST", path: "/bears" } = conv) do
+    BearController.create(conv, conv.params)
   end
 
   def route(%Conv{method: "DELETE", path: "/bears/" <> _id} = conv) do
@@ -71,11 +76,11 @@ defmodule Servy.Handler do
     %{ conv | resp_body: body }
   end
 
-  def emojify(%Conv{} =conv), do: conv
+  def emojify(%Conv{} = conv), do: conv
 
   def format_response(%Conv{} = conv) do
     """
-    HTTP/1.1 #{conv.status} #{status_reason(conv.status)}
+    HTTP/1.1 #{Conv.full_status(conv)}
     Content-Type: text/html
     Content-Length: #{byte_size(conv.resp_body)}
 
